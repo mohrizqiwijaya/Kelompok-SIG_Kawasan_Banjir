@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map GeoJSON Sukabumi</title>
+  <!-- Library Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    #map { height: 600px; width: 100%; }
+  </style>
+</head>
+<body>
+  <h2>Kawasan Rawan Banjir Pelabuhan Ratu</h2>
+  <div id="map"></div>
+  <script>
+    // Inisialisasi peta & basemap
+    var map = L.map('map').setView([-7.0018, 106.5523], 12);
+
+
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+      maxZoom: 19, attribution: 'OpenStreetMap' 
+    }).addTo(map);
+    var satellite = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
+    );
+
+    // Layer group untuk overlay
+    var boundaryLayer = L.layerGroup();
+    var polylineLayer = L.layerGroup();
+    var banjirLayer = L.layerGroup();
+    var markerLayer = L.layerGroup();
+
+    // --- Data GeoJSON, copy dari input Anda ---
+    var dataBoundary = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"coordinates":[[[106.51267489167265,-6.96438801126105],[106.5431589879592,-6.9861340693075675],[106.54280376903233,-6.988988233334396],[106.54219479691864,-6.9911092609349055],[106.54220355364686,-6.996112237415119],[106.54189677808648,-7.00131346686608],[106.54098971092435,-7.0040238531546635],[106.53994341290769,-7.007428889572353],[106.54143407902228,-7.0149102713836555],[106.54490447580707,-7.014068507613402],[106.55365111622478,-7.008050855209035],[106.5565899834744,-7.009902049679482],[106.56612741085308,-7.01568350487122],[106.56938650932983,-7.022482536980434],[106.57248833539768,-7.01676810726093],[106.57746526857557,-7.016227556297565],[106.58645261090919,-7.021421866784664],[106.59327892138356,-7.023926116508861],[106.5995344793385,-7.02103218853253],[106.61356053638576,-7.0149360369380105],[106.61292651477123,-7.012394634775433],[106.61750154666458,-7.013223103961835],[106.617039777201,-7.010563727692059],[106.62154609669858,-7.008561155176523],[106.63851566363905,-6.983419578177191],[106.63106268788187,-6.97810118600195],[106.61999741581832,-6.973518433733545],[106.63508399459897,-6.970877638849856],[106.63149028784721,-6.957001923667846],[106.60481744755953,-6.943161810990674],[106.60241645420865,-6.927533891802838],[106.58903456666087,-6.9156271602176815],[106.58753053607433,-6.92896524273263],[106.55442546422489,-6.943596260134967],[106.51267489167265,-6.96438801126105]]],"type":"Polygon"}}]};
+    var dataPolyline = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"coordinates":[[106.5448992859823,-6.986989735937769],[106.54741709066371,-6.9881327369479465]],"type":"LineString"}},{"type":"Feature","properties":{},"geometry":{"coordinates":[[106.54653057896405,-6.987436995023401],[106.54738853182243,-6.988132547692615]],"type":"LineString"}},{"type":"Feature","properties":{},"geometry":{"coordinates":[[106.54467787315104,-6.987646483798528],[106.54740516978887,-6.988151895771892]],"type":"LineString"}}]};
+    var dataBanjir = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"coordinates":[[[106.54457544022375,-6.987562235997913],[106.54457544022375,-6.987658211332388],[106.54470794915943,-6.987658211332388],[106.54470794915943,-6.987562235997913],[106.54457544022375,-6.987562235997913]]],"type":"Polygon"}},{"type":"Feature","properties":{},"geometry":{"coordinates":[[[106.5464786291817,-6.9874610035464855],[106.54654464085428,-6.9874610035464855],[106.54654464085428,-6.987411611674659],[106.5464786291817,-6.987411611674659],[106.5464786291817,-6.9874610035464855]]],"type":"Polygon"}},{"type":"Feature","properties":{},"geometry":{"coordinates":[[[106.5446642484182,-6.987002483741065],[106.54496733144464,-6.987002483741065],[106.54496733144464,-6.98652137061552],[106.5446642484182,-6.98652137061552],[106.5446642484182,-6.987002483741065]]],"type":"Polygon"}}]};
+    var dataTitikKumpul = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 1","desa":"Citarik"},"geometry":{"type":"Point","coordinates":[106.55416,-7.01105]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 2","desa":"Citarik"},"geometry":{"type":"Point","coordinates":[106.54783,-7.01886]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 3","desa":"Citarik"},"geometry":{"type":"Point","coordinates":[106.54617,-7.01258]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 4","desa":"Pelabuhanratu"},"geometry":{"type":"Point","coordinates":[106.5465,-7.00562]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 5","desa":"Pelabuhanratu"},"geometry":{"type":"Point","coordinates":[106.54739,-6.98815]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 11","desa":"Pelabuhanratu"},"geometry":{"type":"Point","coordinates":[106.54474,-6.98319]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 10","desa":"Pelabuhanratu"},"geometry":{"type":"Point","coordinates":[106.54474,-6.98319]},"id":6},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 12","desa":"Citepus"},"geometry":{"type":"Point","coordinates":[106.54044,-6.97916]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 13","desa":"Citepus"},"geometry":{"type":"Point","coordinates":[106.5322,-6.97702]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 14","desa":"Citepus"},"geometry":{"type":"Point","coordinates":[106.52181,-6.9654]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 15","desa":"Citepus"},"geometry":{"type":"Point","coordinates":[106.51832,-6.96571]}},{"type":"Feature","properties":{"jalur":"Jalur Evakuasi 6","desa":"Pelabuhanratu"},"geometry":{"type":"Point","coordinates":[106.54739,-6.98815]}}]};
+
+    // --- Masukkan GeoJSON ke masing-masing layer ---
+    L.geoJSON(dataBoundary, {
+      style: { color: 'green', weight: 2, fillOpacity: 0.2 }
+    }).addTo(boundaryLayer);
+
+    L.geoJSON(dataPolyline, {
+      style: { color: 'blue', weight: 3 }
+    }).addTo(polylineLayer);
+
+    L.geoJSON(dataBanjir, {
+      style: { color: 'orange', weight: 2, fillOpacity: 0.8 }
+    }).addTo(banjirLayer);
+
+    L.geoJSON(dataTitikKumpul, {
+      pointToLayer: function (feature, latlng) {
+        return L.marker(latlng);
+      },
+      onEachFeature: function (feature, layer) {
+        if (feature.properties) {
+          layer.bindPopup(feature.properties.jalur + "<br>Desa: " + feature.properties.desa);
+        }
+      }
+    }).addTo(markerLayer);
+
+    // --- Layer control untuk ON/OFF ---
+    var baseMaps = {
+      "OSM": osm,
+      "Satellite": satellite
+    };
+    var overlayMaps = {
+      "Batas Kecamatan": boundaryLayer,
+      "Polyline": polylineLayer,
+      "Rawan Banjir": banjirLayer,
+      "Titik Kumpul": markerLayer
+    };
+    L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+    // Tampilkan semua layer default
+    boundaryLayer.addTo(map);
+    polylineLayer.addTo(map);
+    banjirLayer.addTo(map);
+    markerLayer.addTo(map);
+  </script>
+</body>
+</html>
