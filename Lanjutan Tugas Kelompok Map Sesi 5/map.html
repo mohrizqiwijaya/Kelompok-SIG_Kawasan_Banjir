@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Peta Rawan Banjir Pelabuhan Ratu</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 10px; }
+    h2 { margin-bottom: 10px; }
+    #map { height: 650px; width: 100%; border-radius: 8px; }
+    .popup-table { border-collapse: collapse; width: 100%; }
+    .popup-table td { padding: 4px 6px; border-bottom: 1px solid #eee; }
+    .btn-more, .btn-center {
+      margin-top: 8px; padding: 6px 10px;
+      border: none; border-radius: 4px; cursor: pointer; font-size: 13px;
+      color: white;
+    }
+    .btn-more { background: #ff8c1a; }
+    .btn-center { background: #007bff; margin-left: 6px; }
+    .btn-more:hover { background: #e67e00; }
+    .btn-center:hover { background: #0056b3; }
+    .popup-image {
+      margin-top: 10px;
+      width: 100%;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Peta Kawasan Rawan Banjir Pelabuhan Ratu</h2>
+  <div id="map"></div>
+
+  <script>
+    // Inisialisasi Peta
+    var map = L.map('map').setView([-7.0018, 106.5523], 12);
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: 'OpenStreetMap'
+    }).addTo(map);
+    var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19, attribution: 'Tiles © Esri'
+    });
+
+    // Layer Group
+    var boundaryLayer = L.layerGroup().addTo(map);
+    var lineLayer = L.layerGroup().addTo(map);
+    var banjirLayer = L.layerGroup().addTo(map);
+    var titikLayer = L.layerGroup().addTo(map);
+
+    // Ikon banjir gaya Google Maps
+    var floodIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/2556/2556993.png',
+      iconSize: [34, 34],
+      iconAnchor: [17, 34],
+      popupAnchor: [0, -30]
+    });
+
+    // Fungsi Load GeoJSON
+    function loadGeoJSON(url, options, targetLayer) {
+      fetch(url)
+        .then(res => res.json())
+        .then(data => L.geoJSON(data, options).addTo(targetLayer))
+        .catch(err => console.error("❌ Gagal memuat " + url, err));
+    }
+
+    // Data gambar berdasarkan nama jalur/desa
+    const gambarTitik = {
+      "Jalur Evakuasi 1": "https://pusatkrisis.kemkes.go.id/__asset/__images/content/82Banjir.jpg",
+      "Jalur Evakuasi 2": "https://sigap.sidoarjokab.go.id/images/foto_panduan/banjir.jpg",
+      "Jalur Evakuasi 3": "https://jatengprov.go.id/wp-content/uploads/2025/01/WhatsApp-Image-2025-01-20-at-15.56.55-2.jpeg",
+      "Jalur Evakuasi 4": "https://img.antarafoto.com/cache/1200x799/2025/03/07/banjir-bandang-di-pelabuhan-ratu-sukabumi-1gvwl-dom.jpg",
+      "Jalur Evakuasi 6": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXnwmkdAKqmS5f-o5X5f6VqFCiHGDMO9OckQ&.jpg",
+      "Jalur Evakuasi 15": "https://bpbd.kotimkab.go.id/wp-content/uploads/2024/05/WhatsApp-Image-2024-02-17-at-13.33.25-2-1320x500.jpeg",
+      "Jalur Evakuasi 13": "https://umj.ac.id/storage/2024/12/banjir-bandang-di-sukabumi_169.jpeg",
+      "Jalur Evakuasi 12": "https://cdn.antaranews.com/cache/1200x800/2025/03/07/Banjir-Bandang-Sukabumi-070325-Ak-46.jpg",
+      "Jalur Evakuasi 10": "https://img.okezone.com/content/2019/01/14/525/2003984/banjir-di-sukabumi-bpbd-akibat-bendungan-tersumbat-yxOPAa9Of4.jpg",
+      "Jalur Evakuasi 14": "https://asset-2.tribunnews.com/jabar/foto/bank/images/Banjir-melanda-sejumlah-wilayah-di-Kabupaten-Sukabumi.jpg",
+      "default": "https://cdn-icons-png.flaticon.com/512/941/941521.png"
+    };
+
+    // Batas Kecamatan
+    loadGeoJSON('map.geojson', {
+      style: { color: 'green', weight: 2, fillOpacity: 0.2 },
+      onEachFeature: (f, l) => {
+        l.bindTooltip("Batas Kecamatan", { sticky: true });
+        l.bindPopup(`
+          <table class="popup-table">
+            <tr><td><b>Jenis</b></td><td>Batas Kecamatan</td></tr>
+            <tr><td><b>Keterangan</b></td><td>Wilayah administratif Pelabuhan Ratu</td></tr>
+          </table>
+        `);
+      }
+    }, boundaryLayer);
+
+    // Jalur Evakuasi
+    loadGeoJSON('Line.geojson', {
+      style: { color: 'blue', weight: 3 },
+      onEachFeature: (f, l) => {
+        l.bindTooltip("Jalur Evakuasi", { sticky: true });
+        l.bindPopup(`
+          <table class="popup-table">
+            <tr><td><b>Jenis</b></td><td>Jalur Evakuasi</td></tr>
+            <tr><td><b>Status</b></td><td>Aktif</td></tr>
+          </table>
+        `);
+      }
+    }, lineLayer);
+
+    // Area Rawan Banjir
+    loadGeoJSON('RawanBanjir.geojson', {
+      style: { color: '#ff8c1a', weight: 2, fillOpacity: 0.7 },
+      onEachFeature: (f, l) => {
+        l.bindTooltip("Area Rawan Banjir", { sticky: true });
+        l.bindPopup(`
+          <table class="popup-table">
+            <tr><td><b>Jenis</b></td><td>Area Rawan Banjir</td></tr>
+            <tr><td><b>Potensi</b></td><td>Tinggi</td></tr>
+          </table>
+          <button class='btn-more' onclick='showImage(this,"https://cdn-icons-png.flaticon.com/512/1171/1171269.png")'>More Info</button>
+          <img class='popup-image' src='' alt='Info Gambar'/>
+        `);
+      }
+    }, banjirLayer);
+
+    // Titik Kumpul dengan gambar berbeda
+    loadGeoJSON('TitikKumpul.geojson', {
+      pointToLayer: (f, latlng) => L.marker(latlng, { icon: floodIcon }),
+      onEachFeature: (f, l) => {
+        let props = f.properties;
+        let namaJalur = props?.jalur || "default";
+        let imgUrl = gambarTitik[namaJalur] || gambarTitik["default"];
+
+        let popupHTML = `
+          <table class="popup-table">
+            <tr><td><b>Jalur</b></td><td>${namaJalur}</td></tr>
+            <tr><td><b>Desa</b></td><td>${props?.desa || "-"}</td></tr>
+            <tr><td><b>Koordinat</b></td><td>${l.getLatLng().lat.toFixed(5)}, ${l.getLatLng().lng.toFixed(5)}</td></tr>
+          </table>
+          <button class='btn-more' onclick='showImage(this,"${imgUrl}")'>More Info</button>
+          <button class='btn-center' onclick='map.setView([${l.getLatLng().lat}, ${l.getLatLng().lng}], 16)'>Center</button>
+          <img class='popup-image' src='' alt='Info Gambar'/>
+        `;
+
+        l.bindTooltip(namaJalur, { sticky: true });
+        l.bindPopup(popupHTML);
+      }
+    }, titikLayer);
+
+    // Fungsi menampilkan gambar di popup
+    function showImage(btn, imgUrl) {
+      const popup = btn.closest('.leaflet-popup-content');
+      const img = popup.querySelector('.popup-image');
+      img.src = imgUrl;
+      img.style.display = 'block';
+    }
+
+    // Control Layer
+    L.control.layers(
+      { "OSM": osm, "Satellite": satellite },
+      {
+        "Batas Kecamatan": boundaryLayer,
+        "Jalur Evakuasi": lineLayer,
+        "Rawan Banjir": banjirLayer,
+        "Titik Kumpul": titikLayer
+      }
+    ).addTo(map);
+
+    console.log("🌊 Map aktif — tiap titik punya gambar berbeda!");
+  </script>
+</body>
+</html>
